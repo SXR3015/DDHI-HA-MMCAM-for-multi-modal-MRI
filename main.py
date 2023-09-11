@@ -77,17 +77,6 @@ def run(fold_id, opt):
         val_logger = Logger(OsJoin(log_path, 'val.log'),
                             ['epoch', 'loss', 'acc', 'recall', 'precision', 'f1', 'sensitivity', 'specificity'])
 
-    # if opt.pretrain_path:
-    #     print('loading checkpoint{}'.format(opt.pretrain_path))
-    #     checkpoint = torch.load(opt.pretrain_path)
-    #     assert opt.arch==checkpoint['arch']
-    #
-    #     opt.begin_epoch = checkpoint['epoch']
-    #     model.load_state_dict(checkpoint['state_dict'])
-    #     if not opt.no_train:
-    #         optimizer.load_state_dict(checkpoint['optimizer'])
-
-    #print('run')
     writer = SummaryWriter(logdir=event_path)
     for i in range(opt.begin_epoch, opt.n_epochs+1):
         # torch.cuda.empty_cache()
@@ -102,12 +91,6 @@ def run(fold_id, opt):
             writer.add_scalar('lr', lr, i)
     writer.close()
     print('-'*47, 'FOLD %s FINISHED'%str(fold_id), '-'*48)
-
-# if opt.test:
-#     test_data = TestSet()
-#     test_loader = torch.utils.data.DataLoader(test_data, batch_size = opt.batch_size, shuffle=False,
-#                                                         num_workers = opt.n_threads, pin_memory=True)
-#     test.test(test_loader, model, opt, test_data.label)
 
 if __name__ == '__main__':
     opt = parse_opts()
