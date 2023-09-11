@@ -36,44 +36,12 @@ def val_epoch(epoch,data_loader,model,criterion,opt,logger, writer):
             inputs = (Variable(input) for input in inputs)
             labels = Variable(labels)
             inputs = list(inputs)
-            #outputs_add = torch.zeros(inputs[0].shape[0], opt.n_classes).cuda()
-            #outputs_array = torch.zeros(opt.num_of_feature, inputs[0].shape[0], opt.n_classes)
-            # inputs_1 = [inputs[0], inputs[1], inputs[2]]
-            # inputs_2 = [inputs[5], inputs[3], inputs[4]]
-            # inputs = [inputs_1, inputs_2]
-            #inputs_1 = [inputs[0], inputs[2], inputs[3]]
             features_dict = ['ALFF','DFC', 'FA', 'FC']
             features_select = opt.features.split('_')
             indexs = (features_dict.index(feature) for feature in features_select)
             inputs_1 = (inputs[index] for index in indexs)
             inputs = [list(inputs_1), labels]
             loss, outputs = model(inputs)
-            # outputs = torch.zeros(opt.num_of_feature, 3).cuda()
-            # for input in inputs:
-            #     output_tmp = model(input)
-            #     outputs = outputs + output_tmp
-            # inputs_fmri = (inputs[0], inputs[5])
-            # inputs_fc = (inputs[1], inputs[3])
-            # inputs_dti = (inputs[2], inputs[4])
-            # i = 0
-            # for input in inputs_fmri:
-            #     output_tmp = model(input)
-            #     outputs_add = outputs_add + output_tmp
-            #     outputs_array[i, :, :] = output_tmp
-            #     i = i + 1
-            # for input in inputs_fc:
-            #     output_tmp = model(input)
-            #     outputs_add = outputs_add + output_tmp
-            #     outputs_array[i, :, :] = output_tmp
-            #     i = i + 1
-            # for input in inputs_dti:
-            #     output_tmp = model(input)
-            #     outputs_add = outputs_add + output_tmp
-            #     outputs_array[i, :, :] = output_tmp
-            #     i = i + 1
-            #outputs_mutiply = torch.ones(inputs[0].shape[0], opt.n_classes).cuda()
-            #outputs = model(inputs)
-            #loss = criterion(outputs, labels)
             acc = calculate_accuracy(outputs, labels)
             recall, precision, f1, sensitivity, specificity = calculate_recall(outputs, labels, opt)
 
@@ -113,13 +81,6 @@ def val_epoch(epoch,data_loader,model,criterion,opt,logger, writer):
             specificity=specificitys))
 
         _, pred = outputs.topk(k=1, dim=1, largest=True)
-        # print('prediction :', end=' ')
-        # for i in range(0, len(pred)):
-        #    print('%d\t' % (pred[i]), end='')
-        # print('\nlabel    :', end=' ')
-        # for i in range(0, len(labels)):
-        #    print('%d\t' % (labels[i]), end='')
-        # print('\n')
         pred_arr = torch.cat([pred_arr, pred], dim=0)
         labels_arr = torch.cat([labels_arr, labels], dim=0)
     print('prediction :', end=' ')
