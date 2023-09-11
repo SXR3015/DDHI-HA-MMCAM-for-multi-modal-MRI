@@ -22,7 +22,7 @@ test.py
 
 ## generate the avtivation map in multi-modal MRI  
 ### replace the py files in initial torchcam with the files in torcham filefolder in this respority, including
-activation.py
+activation.py  
 core.py
-### run test.py
+### run test.py  
 test.py
