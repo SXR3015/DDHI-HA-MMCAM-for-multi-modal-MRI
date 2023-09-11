@@ -1,7 +1,7 @@
 # dual-domain-cross-attention-hierarchical-alignments-mmscorecam-for-multi-modal-MRI
-A framework of hierarchical alignments, dual-domain cross-attention
+A framework of hierarchical alignments, dual-domain cross-attention,mmscorecam
 
-## __The environment is__  
+## __Environment__  
 torch ==1.13.1  
 numpy == 1.22.3  
 nibabel == 1.10.2  
@@ -17,10 +17,12 @@ To run the model, you need to extract the sfc, dfc, and alff by matlab. You can 
 generate_csv.py
 ### train and validate the model 
 train.py
-### test 
+### test the model 
 test.py
 
 ## generate the avtivation map in multi-modal MRI  
 ### replace the py files in initial torchcam with the files in torcham filefolder in this respority, including
 activation.py
 core.py
+### run test.py
+test.py
