@@ -11,7 +11,7 @@ einops == 0.6.0
 python == 3.9.0  
 imageio == 2.31.1  
 ## extract the imaging features
-To run the model, you need to extract the sfc, dfc, and alff by Matlab. You can use the batch operation of spm12 to finish this. Then, you need to use Panda to generate FA. But you can also use FSL instead. In the data file, we list some example files. Additionally, the input data shape might influence the kernel size of avgpooling, you need to change the kernel size, if has bugs.  
+To run the model, you need to extract the sfc, dfc, and alff by Matlab. You can use the batch operation of spm12 to finish this. Then, you need to use Panda to generate FA. But you can also use FSL instead. Additionally, the input data shape might influence the kernel size of avgpooling, you need to change the kernel size, if has bugs.  
 
 ## run the model
 
