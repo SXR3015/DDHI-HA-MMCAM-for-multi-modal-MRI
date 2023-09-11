@@ -212,7 +212,6 @@ class dfc_encoder(nn.Module):
                                padding=(1, 1, 1), bias=False)
         self.bn_res = nn.BatchNorm3d(channel)
     def forward(self, x):
-        # x_res = x
         x_res = self.conv_res(x)
         x_res = self.bn_res(x_res)
         x = self.conv1(x)
@@ -239,7 +238,6 @@ class dfc_3d_downsample(nn.Module):
                                padding=(1, 1, 1), bias=False)
         self.bn_res = nn.BatchNorm3d(channel_out)
     def forward(self, x):
-        # x_res = x
         x_res = self.conv_res(x)
         x_res = self.bn_res(x_res)
         x = self.conv1(x)
@@ -249,8 +247,6 @@ class dfc_3d_downsample(nn.Module):
         x = x_res + x
         x = self.relu(x)
         x = self.maxpool(x)
-
-        # x = x_res + x
         return x
 
 # DD2C means depth_domain_2D_convolution 
@@ -298,8 +294,6 @@ class DD2C(nn.Module):
                   slice = self.bn3(slice)
                   slice = self.conv4(slice)
                   slice = self.bn4(slice)
-                  # slice = self.conv5(slice)
-                  # slice = self.bn5(slice)
                   slice = slice_res + slice
                   slice = self.relu(slice)
                   slice = self.maxpool(slice)
@@ -316,9 +310,6 @@ class MTSA(nn.Module):
 
     def __init__(self, block, layers, opt, shortcut_type='B', num_classes=400):
         super(dfc_pyramid, self).__init__()
-        # self.pool_choose = avgpool_choose(opt)
-        # self.conv1D_dfc = nn.Conv1d(in_channels=512*7, out_channels=512, kernel_size=1)
-        # self.cnn_backbone = ResNet(block, layers, opt, shortcut_type=shortcut_type, num_classes=num_classes)
         self.dfc_encoder = dfc_encoder(stride_1=2, stride_2=2, channel=8)
         self.dfc_encoder_5 = dfc_encoder(stride_1=2, stride_2=2, channel=8)
         self.dfc_encoder_10 = dfc_encoder(stride_1=2, stride_2=4, channel=16)
@@ -359,20 +350,16 @@ class MTSA(nn.Module):
            if i+5 > shape_res_T:
               x_5 = torch.cat([x_5,torch.var_mean(x[:,:,:,:,i:],dim=4,keepdim=True)[1]], dim=4)
            else :
-               # x_10 = torch.cat([x_10, torch.var_mean(x[:, :, :, :, i-10:i], dim=4, keepdim=True)[1]], dim=4)
                x_5 = torch.cat([x_5, torch.var_mean(x[:, :, :, :, i:i+5], dim=4, keepdim=True)[1]], dim=4)
         for i in range(0,shape_res_T, 10):
            if i+10 > shape_res_T:
               x_10 = torch.cat([x_10,torch.var_mean(x[:,:,:,:,i:],dim=4,keepdim=True)[1]], dim=4)
            else :
-               # x_20 = (torch.cat([x_20, torch.var_mean(x[:, :, :, :, i-20:i], dim=4, keepdim=True)[1]], dim=4))
                x_10 = (torch.cat([x_10, torch.var_mean(x[:, :, :, :, i:i+10], dim=4, keepdim=True)[1]], dim=4))
         for i in range(0,shape_res_T, 20):
-           # x_40 = (torch.cat([x_40,torch.var_mean(x[:,:,:,:,i-40:i],dim=4,keepdim=True)[1]], dim=4))
            if i+20 > shape_res_T:
               x_20 = torch.cat([x_20,torch.var_mean(x[:,:,:,:,i:],dim=4,keepdim=True)[1]], dim=4)
            else :
-               # x_40 = (torch.cat([x_40, torch.var_mean(x[:, :, :, :, i-40:i], dim=4, keepdim=True)[1]], dim=4))
                x_20 = (torch.cat([x_20, torch.var_mean(x[:, :, :, :, i:i+20], dim=4, keepdim=True)[1]], dim=4))
         for i in range(0,shape_res_T, 40):
            if i+40 > shape_res_T:
