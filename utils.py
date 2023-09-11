@@ -66,13 +66,10 @@ def calculate_recall(outputs, labels, opt):
     pred = pred.t() # 转置成行
     if opt.n_classes == 3:
         TP = (((pred.data == 1) & (labels.data == 1)) | ((pred.data == 2) & (labels.data == 2))).cpu().float().sum().data
-        #TN = ((pred.data == 0) & (labels.data == 0)).cpu().float().sum().data
         FP = (((pred.data == 1) & (labels.data == 0)) | ((pred.data == 2) & (labels.data == 0))).cpu().float().sum().data
         TN = ((pred.data == 0) & (labels.data == 0)).cpu().float().sum().data
         FN = (((pred.data == 0) & (labels.data == 1)) | ((pred.data == 0) & (labels.data == 2))).cpu().float().sum().data
-        #
-        #FP = ((pred.data == 1) & (labels.data == 0)).cpu().float().sum().data
-        #p = TP / (TP + FP)  #precision
+
         if sum(labels.data) == 0:
             TP = 1
             FN = 0
@@ -105,23 +102,7 @@ def calculate_recall(outputs, labels, opt):
             sp = torch.tensor(0).float()
         else:
             sp = TN / (TN + FP)
-        # clf = LogisticRegression(solver="liblinear").fit(np.array(outputs.cpu().float().data), np.array(labels.cpu().float().data))
-        # auc = roc_auc_score(np.array(labels.cpu().float().data, clf.predict_proba(np.array(outputs.cpu().float().data)), multi_class='ovr'))
-#        clf = MultiOutputClassifier(clf).fit(np.array(outputs.cpu().float().data), np.array(labels.cpu().float().data))
-#        y_pred = clf.predict_proba(np.array(labels.cpu().float().data))
-#        auc = roc_auc_score(labels.cpu().float().data, outputs.cpu().float().data)
-        #F1 = 2 * r * p / (r + p)
         return r, p, f1, sen, sp
-    # elif opt.n_classes == 2 and 'HC' in opt.category:
-    #     TP = ((pred.data == 1) & (labels.data == 1)).cpu().float().sum().data
-    #     #TN = ((pred.data == 0) & (labels.data == 0)).cpu().float().sum().data
-    #     FN = (((pred.data == 0) & (labels.data == 1))).cpu().float().sum().data
-    #     #
-    #     #FP = ((pred.data == 1) & (labels.data == 0)).cpu().float().sum().data
-    #     #p = TP / (TP + FP)  #precision
-    #     r = TP / (TP + FN)  #recall
-        #F1 = 2 * r * p / (r + p)
-        # return r
     else:
         TP = ((pred.data == 1) & (labels.data == 1)).cpu().float().sum().data
         FP = ((pred.data == 1) & (labels.data == 0)).cpu().float().sum().data
@@ -140,9 +121,6 @@ def calculate_recall(outputs, labels, opt):
         if label_0 == 0:
             TN = 1
             FP = 0
-        #
-        #FP = ((pred.data == 1) & (labels.data == 0)).cpu().float().sum().data
-        #p = TP / (TP + FP)  #precision
         if TP + FN == 0:
             r = torch.tensor(0).float()
         else:
@@ -168,14 +146,7 @@ def calculate_recall(outputs, labels, opt):
         else:
             sp = TN / (TN + FP)
             # sp = torch.tensor(sp).float()
-#        auc = roc_auc_score(np.array(labels.cpu().float().data), np.array(outputs.cpu().float().data))
-#        clf = LogisticRegression(solver="liblinear", random_state=0).fit(outputs.cpu().float().data, (labels.view(len(labels), -1)).cpu().float().data)
-#        auc=roc_auc_score(np.array(labels.cpu().float().data), clf.predict_proba(np.array(outputs.cpu().float().data))[:, 1])
-        #F1 = 2 * r * p / (r + p)
         return r, p, f1, sen, sp
-# def calculate_best_metric(epoch_metric):
-#     best_metric = max(epoch_metric[:,1])
-#     return
 def OsJoin(*args):
     p = os.path.join(*args)
     p = p.replace('\\', '/')
