@@ -106,12 +106,8 @@ class avgpool_choose(nn.Module):
                                           math.ceil(opt.sample_size2_fmri/ 32),math.ceil(opt.sample_size1_fmri/ 32)), stride=1)
         self.avgpool_dti = nn.AvgPool3d((math.ceil(opt.sample_size1_dti/ 16),
                                           math.ceil(opt.sample_size2_dti/ 32),math.ceil(opt.sample_duration_dti/ 32)), stride=1)
-        # self.avgpool_dfc = nn.AvgPool3d((math.ceil(opt.sample_duration_dfc / 17),
-        #                                   math.ceil(opt.sample_size1_fc/ 32),math.ceil(opt.sample_size2_fc/ 32)), stride=1)
         self.avgpool_dfc = nn.AvgPool3d((math.ceil(opt.sample_duration_dfc / 11),
                                           math.ceil(opt.sample_size1_fc/ 32),math.ceil(opt.sample_size2_fc/ 48)), stride=1)
-        # self.avgpool_dfc = nn.AvgPool3d((math.ceil(1/12),
-        #                                   math.ceil(opt.sample_size1_fc/ 32),math.ceil(opt.sample_size2_fc/ 48)), stride=1)
         self.avgpool_zfc = nn.AvgPool3d((math.ceil(opt.sample_size2_fc/ 16),
                                           math.ceil(opt.sample_size1_fc/ 32), 1), stride=1)
         self.avgpool_dfc_half = nn.AvgPool3d((math.ceil(opt.sample_duration_dfc / 16),
@@ -228,9 +224,9 @@ class dfc_encoder(nn.Module):
         x = self.maxpool(x)
 
         return x
-class dfc_fusion(nn.Module):
+class dfc_3d_downsample(nn.Module):
     def __init__(self, channel_in=8, channel_out=8, stride=2):
-        super(dfc_fusion, self).__init__()
+        super(dfc_3d_downsample , self).__init__()
         self.conv1 = nn.Conv3d(channel_in, 512, kernel_size=3, stride=(1, 1, 2),
                                padding=(1, 1, 1), bias=False)
         self.bn1 = nn.BatchNorm3d(512)
@@ -256,28 +252,11 @@ class dfc_fusion(nn.Module):
 
         # x = x_res + x
         return x
-# class forecast(nn.Module):
-#     def __init__(self):
-#         super(forecast, self).__init__()
-#         self.conv1 = nn.Conv2d(in_channels=2, out_channels=512, kernel_size=1)
-#         self.bn1 = nn.BatchNorm2d(128)
-#         self.conv2 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1)
-#         self.bn2 = nn.BatchNorm2d(512)
-#         self.relu = nn.ReLU(inplace=True)
-#         self.conv3 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1)
-#         self.bn3 = nn.BatchNorm2d(512)
-#         self.conv4 = nn.Conv2d(in_channels=512, out_channels=1, kernel_size=1)
-#         self.bn4 = nn.BatchNorm2d(1)
-#         # self.conv5 = nn.Conv2d(in_channels=128, out_channels=1, kernel_size=1)
-#         # self.bn5 = nn.BatchNorm2d(1)
-#         self.conv_res = nn.Conv2d(in_channels=2, out_channels=1, kernel_size=1)
-#         self.bn_res = nn.BatchNorm2d(1)
-#         self.relu = nn.ReLU(inplace=True)
-#         self.maxpool = nn.MaxPool3d(kernel_size=(3, 3, 3), stride=1, padding=1)
 
-class forecast(nn.Module):
+# DD2C means depth_domain_2D_convolution 
+class DD2C(nn.Module):
     def __init__(self):
-            super(forecast, self).__init__()
+            super(DD2C, self).__init__()
             self.conv1 = nn.Conv2d(in_channels=2, out_channels=512, kernel_size=1)
             self.bn1 = nn.BatchNorm2d(512)
             self.conv2 = nn.Conv2d(in_channels=512, out_channels=512, kernel_size=1)
@@ -298,19 +277,14 @@ class forecast(nn.Module):
         slice_tmp = x_large[:,0,:,:,0:1]
         channel_tmp = x_large[:,0:1,:,:,:]
         x_small = x[1]
-        forecast_factor = round(x_large.shape[4]/x_small.shape[4])
+        DD2C_factor = round(x_large.shape[4]/x_small.shape[4])
         for k in range(x_small.shape[1]):
             for i in range(0, (x_small.shape[4])+1):
-                for j in range(1, forecast_factor+1):
-                  if j + i * forecast_factor >= x_large.shape[4] or i == x_small.shape[4]:
+                for j in range(1, DD2C_factor+1):
+                  if j + i * DD2C_factor >= x_large.shape[4] or i == x_small.shape[4]:
                         break
-
-                      # if j+i*forecast_factor <= x_large.shape[4]-1:
-                  slice_tensor_arr = torch.cat([torch.unsqueeze(x_large[:,k,:,:,j + i * forecast_factor], dim=3),
+                  slice_tensor_arr = torch.cat([torch.unsqueeze(x_large[:,k,:,:,j + i * DD2C_factor], dim=3),
                                                    torch.unsqueeze(x_small[:,k,:,:,i], dim=3)], dim=3)
-                  # else:
-                  #   slice_tensor_arr = torch.cat([torch.unsqueeze(x_large[:, :, :, :, j + i * forecast_factor], dim=4),
-                  #                                 torch.unsqueeze(x_small[:, :, :, :, i], dim=4)], dim=4)
                   slice_tensor_arr = torch.transpose(slice_tensor_arr, 1, 3)
                   slice_res = self.conv_res(slice_tensor_arr)
                   slice_res = self.bn_res(slice_res)
@@ -338,7 +312,7 @@ class forecast(nn.Module):
         return channel_tmp[:,1:,:,:,:]
 
 
-class dfc_pyramid(nn.Module):
+class MTSA(nn.Module):
 
     def __init__(self, block, layers, opt, shortcut_type='B', num_classes=400):
         super(dfc_pyramid, self).__init__()
@@ -350,16 +324,16 @@ class dfc_pyramid(nn.Module):
         self.dfc_encoder_10 = dfc_encoder(stride_1=2, stride_2=4, channel=16)
         self.dfc_encoder_20 = dfc_encoder(stride_1=4, stride_2=4, channel=32)
         self.dfc_encoder_40 = dfc_encoder(stride_1=4, stride_2=8, channel=64)
-        self.dfc_fusion = dfc_fusion(channel_in=8, channel_out=8)
-        self.dfc_fusion_1_5 = dfc_fusion(channel_in=8, channel_out=16)
-        self.dfc_fusion_1_5_10 = dfc_fusion(channel_in=16, channel_out=32)
-        self.dfc_fusion_1_5_10_20 = dfc_fusion(channel_in=32, channel_out=64)
-        self.dfc_fusion_1_5_10_20_40 = dfc_fusion(channel_in=64, channel_out=128)
-        self.forecast_1_5 = forecast()
-        self.forecast_1_5_10 = forecast()
-        self.forecast_1_5_10_20 = forecast()
-        self.forecast_1_5_10_20_40 = forecast()
-        self.forecast = forecast()
+        self.dfc_3d_downsample = dfc_3d_downsample(channel_in=8, channel_out=8)
+        self.dfc_3d_downsample_1_5 = dfc_3d_downsample(channel_in=8, channel_out=16)
+        self.dfc_3d_downsample_1_5_10 = dfc_3d_downsample(channel_in=16, channel_out=32)
+        self.dfc_3d_downsample_1_5_10_20 = dfc_3d_downsample(channel_in=32, channel_out=64)
+        self.dfc_3d_downsample_1_5_10_20_40 = dfc_3d_downsample(channel_in=64, channel_out=128)
+        self.DD2C_1_5 = DD2C()
+        self.DD2C_1_5_10 = DD2C()
+        self.DD2C_1_5_10_20 = DD2C()
+        self.DD2C_1_5_10_20_40 = DD2C()
+        self.DD2C = DD2C()
         self.relu = nn.ReLU(inplace=True)
         self.avgpool = nn.AvgPool3d((2,2,1), stride=1)
         self.conv_last_1 = nn.Conv3d(128, 128, kernel_size=3, stride=(1, 1, 1),
@@ -378,6 +352,9 @@ class dfc_pyramid(nn.Module):
         x_10 = x[:, :, :, :, 0:1]
         x_20 = x[:, :, :, :, 0:1]
         x_40 = x[:, :, :, :, 0:1]
+        '''
+        dfc build
+        '''
         for i in range(0, shape_res_T, 5):
            if i+5 > shape_res_T:
               x_5 = torch.cat([x_5,torch.var_mean(x[:,:,:,:,i:],dim=4,keepdim=True)[1]], dim=4)
@@ -403,21 +380,27 @@ class dfc_pyramid(nn.Module):
            else :
                # x_80 = (torch.cat([x_80, torch.var_mean(x[:, :, :, :, i-80:i], dim=4, keepdim=True)[1]], dim=4))
                x_40 = (torch.cat([x_40, torch.var_mean(x[:, :, :, :, i:i+40], dim=4, keepdim=True)[1]], dim=4))
+        '''
+        MTSA step by step
+        '''
         x_1 = self.dfc_encoder(x)
         x_5 = self.dfc_encoder_5(x_5[:,:,:,:,1:])
-        x_1_5 = self.forecast([x_1, x_5])
-        x_1_5 = self.dfc_fusion_1_5(x_1_5)
+        x_1_5 = self.DD2C([x_1, x_5])
+        x_1_5 = self.dfc_3d_downsample _1_5(x_1_5)
         x_10 = self.dfc_encoder_10(x_10[:,:,:,:,1:])
-        x_1_5_10 = self.forecast([x_1_5, x_10])
-        x_1_5_10 = self.dfc_fusion_1_5_10(x_1_5_10)
+        x_1_5_10 = self.DD2C([x_1_5, x_10])
+        x_1_5_10 = self.dfc_3d_downsample _1_5_10(x_1_5_10)
         x_20 = self.dfc_encoder_20(x_20[:,:,:,:,1:])
-        x_1_5_10_20 = self.forecast([x_1_5_10, x_20])
-        x_1_5_10_20= self.dfc_fusion_1_5_10_20(x_1_5_10_20)
+        x_1_5_10_20 = self.DD2C([x_1_5_10, x_20])
+        x_1_5_10_20= self.dfc_3d_downsample _1_5_10_20(x_1_5_10_20)
         x_40 = self.dfc_encoder_40(x_40[:,:,:,:,1:])
-        x_1_5_10_20_40 = self.forecast([x_1_5_10_20, x_40])
-        x_1_5_10_20_40 = self.dfc_fusion_1_5_10_20_40(x_1_5_10_20_40)
+        x_1_5_10_20_40 = self.DD2C([x_1_5_10_20, x_40])
+        x_1_5_10_20_40 = self.dfc_3d_downsample _1_5_10_20_40(x_1_5_10_20_40)
         x_res = self.conv_last_res(x_1_5_10_20_40)
         x_res = self.bn_last_res(x_res)
+        '''
+        3d upsample
+        '''
         x = self.conv_last_1(x_1_5_10_20_40)
         x = self.bn_last_1(x)
         x = self.conv_last_2(x)
@@ -425,23 +408,6 @@ class dfc_pyramid(nn.Module):
         x = self.relu(x)
         x = x + x_res
         x = self.avgpool(x)
-        # x_1_10_20 = self.dfc_fusion(torch.cat([x_1_10, x_20], dim=4))
-        # x_40 = self.dfc_encoder_40(x_40)
-        # x_1_10_20_40 = self.dfc_fusion(torch.cat([x_1_10_20, x_40], dim=4))
-        # x_80 = self.dfc_encoder_80(x_80)
-        # x_1_10_20_40_80 = self.dfc_fusion(torch.cat([x_1_10_20_40, x_80], dim=4))
-        # x = self.avgpool(x_1_10_20_40_80)
-        # x_half_1 = self.cnn_backbone(x[:, :, :, :, 0:round(shape_res_T / 2)])
-        # x_half_2 = self.cnn_backbone(x[:, :, :, :, round(shape_res_T / 2)+1:])
-        # x_quarter_1 = self.cnn_backbone(x[:, :, :, :, 0:round(shape_res_T / 4)])
-        # x_quarter_2 = self.cnn_backbone(x[:, :, :, :, round(shape_res_T / 4): round(shape_res_T / 2)])
-        # x_quarter_3 = self.cnn_backbone(x[:, :, :, :, round(shape_res_T / 2): round(shape_res_T * 3 / 4)-1])
-        # x_quarter_4 = self.cnn_backbone(x[:, :, :, :, round(shape_res_T * 3 / 4): round(shape_res_T)])
-        # dfc_fea = torch.cat([x_full, x_half_1, x_half_2, x_quarter_1, x_quarter_2, x_quarter_3, x_quarter_4], dim=1)
-        # dfc_fea = x_full+x_half_1+x_half_2+x_quarter_1+x_quarter_2+x_quarter_3+x_quarter_4
-        # dfc_fea = x_10 + x_20 + x_40 + x_80
-        # x = dfc_fea
-        # x = self.conv1D_dfc(torch.squeeze(torch.squeeze(dfc_fea, dim=4), dim=3))
         return x
 
 class contrastive_loss(nn.Module):
@@ -527,24 +493,18 @@ class Attention(nn.Module):
 
     def forward(self, x):
         x = self.norm(x)
-
         qkv = self.to_qkv(x).chunk(3, dim = -1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
-
         dots_qk = torch.matmul(q, k.transpose(-1, -2)) * self.scale
-        # dots = torch.matmul(q* self.scale, k.transpose(-1, -2)* self.scale)
         dots_qv = torch.matmul(q, v.transpose(-1, -2)) * self.scale
         dots_kv = torch.matmul(k, v.transpose(-1, -2)) * self.scale
-        # attn = self.attend(dots)
         attn_qk = self.attend(dots_qk)
         attn_qv = self.attend(dots_qv)
         attn_kv = self.attend(dots_kv)
-        # out = torch.matmul(attn, k)
         out_qv = torch.matmul(attn_qv, k)
         out_qk = torch.matmul(attn_qk, v)
         out_kv = torch.matmul(attn_kv, q)
         out = out_qk + out_qv + out_kv
-        # out = out_qk
         out = rearrange(out, 'b h n d -> b n (h d)')
         return self.to_out(out)#dim=512, inner_dim=dim_head *  heads
 
@@ -556,48 +516,49 @@ class Transformer(nn.Module):
         self.heads = heads
         self.ff = FeedForward(dim, mlp_dim)
         self.att = Attention(dim, heads = heads, dim_head = dim_head),
-        # for _ in range(depth):
-        #     self.layers.append(nn.ModuleList([
-        #         Attention(dim, heads = heads, dim_head = dim_head),
-        #         FeedForward(dim, mlp_dim)
-        #     ]))
-    def exchange_info(self, x1=None, x2=None, dim=512):
-        x_tmp_1 = x2[:,:,0:round(dim/3)]
-        x_tmp_2 = x1[:, :, round(dim / 3):]
-        x1_change = torch.cat([x_tmp_1, x_tmp_2], dim=2)
-        x_tmp_1 = x1[:,:,0:round(dim/3)]
-        x_tmp_2 = x2[:, :, round(dim / 3):]
-        x2_change = torch.cat([x_tmp_1, x_tmp_2], dim=2)
-        return x1_change, x2_change
+   def exchange_info(self, x1=None, x2=None, x3=None, dim=512):
+        if x3 == None:
+            x_tmp_1 = x1[:,:,0:round(dim/3)]
+            x_tmp_2 = x2[:, :, round(dim / 3):]
+            x1_change = torch.cat([x_tmp_1, x_tmp_2], dim=2)
+            x_tmp_1 = x2[:,:,0:round(dim/3)]
+            x_tmp_2 = x1[:, :, round(dim / 3):]
+            x2_change = torch.cat([x_tmp_1, x_tmp_2], dim=2)
+            return x1_change, x2_change
+        else :
+            x_tmp_1 = x1[:,:, 0:round(dim/3)]
+            x_tmp_2 = x2[:, :, round(dim / 3):2*round(dim / 3)]
+            x_tmp_3 = x3[:, :, 2*round(dim / 3):]
+            x1_change = torch.cat([x_tmp_1, x_tmp_2, x_tmp_3], dim=2)
+            # x_tmp_1 = x1[:,:,0:round(dim/3)]
+            # x_tmp_2 = x2[:, :, round(dim / 3):]
+            # x2_change = torch.cat([x_tmp_1, x_tmp_2], dim=2)
+            return x1_change
     def forward(self, x):
-        # x_tmp = x
         for attn, ff in self.layers:
-        #     x_res = x
-        #     x = attn(x) + x
-        #     x = ff(x) + x
-            # x = x + x_res
-            # x = attn(x)
-            x_dfc, x_alff, x_fa, x_fc= x.chunk(4, dim = 1)
-            x_dfc, x_alff = self.exchange_info(x_dfc, x_alff, dim=self.dim)
-            x_fa, x_fc = self.exchange_info(x_fa, x_fc, dim=self.dim)
+             x_dfc, x_alff, x_fa, x_sfc = x.chunk(4, dim = 1)
+            x_dfc = self.exchange_info(x_dfc, x_alff, x_sfc, dim=self.dim)
+            x_alff = self.exchange_info(x_alff, x_dfc, x_fa, dim=self.dim)
+            x_fa = self.exchange_info(x_fa, x_dfc, x_alff, dim=self.dim)
+            x_sfc = self.exchange_info(x_sfc, x_dfc, x_alff, dim=self.dim)
             x_dfc = attn(x_dfc) + x_dfc
             x_alff = attn(x_alff) + x_alff
-            x_fc = attn(x_fc) + x_fc
+            x_sfc = attn(x_sfc) + x_sfc
             x_fa = attn(x_fa) + x_fa
-            x_dfc_alff = x_dfc + x_alff
-            x_dfc_alff_att = attn(x_dfc_alff)
-            x_dfc_alff = x_dfc_alff + x_dfc_alff_att
-            x_dfc_alff_ff = ff(x_dfc_alff) + x_dfc_alff
-            x_dfc_alff = x_dfc_alff + x_dfc_alff_ff
-            x_fa_fc = x_fc + x_fa
-            x_fa_fc_att = self.att(x_fa_fc )
-            x_fa_fc = x_fa_fc + x_fa_fc_att
-            x_fa_fc_ff = ff(x_fa_fc) + x_fa_fc
-            x_fa_fc = x_fa_fc + x_fa_fc_ff
-            x_dfc_alff, x_fa_fc = self.exchange_info(x_dfc_alff, x_fa_fc, dim=self.dim)
-            x_dfc_alff = attn(x_dfc_alff) + x_dfc_alff
-            x_fa_fc = attn(x_fa_fc) + x_fa_fc
-            x_multi = x_dfc_alff + x_fa_fc
+            x_dfc_sfc = x_dfc + x_sfc
+            x_dfc_sfc_att = attn(x_dfc_alff)
+            x_dfc_sfc = x_dfc_sfc + x_dfc_alff_att
+            x_dfc_sfc_ff = ff(x_dfc_sfc) + x_dfc_sfc
+            x_dfc_alff = x_dfc_sfc + x_dfc_sfc_ff
+            x_fa_alff = x_alff + x_fa
+            x_fa_alff_att = self.att(x_fa_alff)
+            x_fa_alff = x_fa_alff + x_fa_alff_att
+            x_fa_alff_ff = ff(x_fa_alff) + x_fa_alff
+            x_fa_alff = x_fa_alff + x_fa_alff_ff
+            x_dfc_sfc, x_fa_alff = self.exchange_info(x_dfc_alff, x_fa_alff, None, dim=self.dim)
+            x_dfc_sfc = attn(x_dfc_sfc) + x_dfc_sfc
+            x_fa_alff = attn(x_fa_alff) + x_fa_alff
+            x_multi = x_fa_alff + x_dfc_sfc
             x_multi= attn(x_multi) + x_multi
             x_multi = ff(x_multi) + x_multi
             x = x_multi
@@ -642,13 +603,8 @@ class SimpleViT(nn.Module):
 
         x = self.transformer(x_multi)
         x = x.mean(dim = 1)
-        # x = torch.unsqueeze(x, dim=1)
-        # x = self.conv_fusion(x)
-        # x = self.bn_fusion(x)
-        # x = torch.squeeze(x, dim=1)
-        # self.linear_head(x)
         x = self.to_latent(x)
-        return x
+        return self.linear_head(x)
 class my_model_name(nn.Module):
     def  __init__(self, block, layers, opt, shortcut_type='B', num_classes=400, last_fc=True):
         super(my_model_name, self).__init__()
@@ -708,21 +664,6 @@ class my_model_name(nn.Module):
                 fea_arr_local_dti.append(x)
             # x = x.view(x.size(0), -1)
             x_array_list.append(x)
-        # fc_conv3 = self.conv_fc(x_array_list[3])
-        # fc_vector = self.avgpool_fc(fc_conv3)
-        # alff_flatten = rearrange(x_array_list[0], 'b c h w d -> b c (h w d)')
-        # fa_flatten = rearrange(x_array_list[2], 'b c h w d -> b c (h w d)')
-        # alff_fa = torch.cat([alff_flatten, fa_flatten], dim=2)
-        #
-        # alff_fa = self.conv1D_fa_alff_1(alff_fa)
-        # alff_fa = self.bn_fa_alff_1(alff_fa)
-        # alff_fa = self.conv1D_fa_alff_2(alff_fa)
-        # alff_fa = self.bn_fa_alff_2(alff_fa)
-        # alff_fa = self.relu(alff_fa)
-        # alff_fa = torch.transpose(alff_fa, 1, 2)
-        # alff_fa = self.conv1D_fa_alff_3(alff_fa)
-        # alff_fa = self.bn_fa_alff_3(alff_fa)
-        # x_array_list[0] = alff_fa.view(alff_fa.size(0), -1)
         x_array_list[1] = x_array_list[1].view(x_array_list[1].size(0), -1)
         x_array_list[0] = x_array_list[0].view(x_array_list[0].size(0), -1)
         x_array_list[2] = x_array_list[2].view(x_array_list[2].size(0), -1)
@@ -736,12 +677,6 @@ class my_model_name(nn.Module):
             x_mid_multiply = torch.multiply(x_multi_add, x_multi_multiply)
             x_multi = torch.add(x_multi_add, x_mid_multiply)
         x_avg = x_multi_add/len(x_array_list)
-        # x_trans = torch.cat([torch.unsqueeze(x_multi_add, dim=2),
-        #                      torch.unsqueeze(x_multi_multiply, dim=2),
-        #                      torch.unsqueeze(x_avg, dim=2)
-        #                      ],
-        #                     dim=2)
-
         rand_arr_1 = random.sample(range(4),4)
         # rand_arr_1 = torch.tensor([0,1,2,3])
         rand_arr_2 = random.sample(range(4),4)
@@ -751,36 +686,15 @@ class my_model_name(nn.Module):
                              torch.unsqueeze(x_array_list[rand_arr_1[2]], dim=2),
                              torch.unsqueeze(x_array_list[rand_arr_1[3]], dim=2)
                              ], dim=2)
-        x_trans_2 = torch.cat([torch.unsqueeze(x_array_list[rand_arr_2[0]], dim=2),
-                             torch.unsqueeze(x_array_list[rand_arr_2[1]], dim=2),
-                             torch.unsqueeze(x_array_list[rand_arr_2[2]], dim=2),
-                             torch.unsqueeze(x_array_list[rand_arr_2[3]], dim=2)
-                             ], dim=2)
         x_trans_1 = torch.transpose(x_trans_1, 1, 2)
-        x_trans_2 = torch.transpose(x_trans_2, 1, 2)
-        # x = self.conv1D_fa_alff_fusion(x_trans)
-        # x_c = self.bn_fa_alff_fusion(x)
-        # x_trans = torch.cat([x_multi_add,
-        #                      x_avg,
-        # #                      x_avg], dim=1)
         x_t_1 = self.Transformer(x_trans_1)
-        x_t_2 = self.Transformer(x_trans_2)
-        # x = x_array_list.mean(dim=1)
-        if self.last_fc:
-            x = x_t_1
-            if len(x.shape) > 2:
-                x = x.squeeze(dim=1)
-            x = self.fc(x)
         if len(fea_arr_fc) > 1 or len(fea_arr_local_dti) > 1:
             fea_arr_local_dti_fusion = [torch.multiply(x_array_list[0], x_array_list[2])
                 , torch.add(x_array_list[0], x_array_list[2])]
-            loss_cl_local_dti = self.contrastive_loss(fea_arr_local_dti_fusion)
-            loss_cl_t = self.contrastive_loss([x_t_1, x_t_2])
-            loss_cl_fc = self.contrastive_loss([x_array_list[1], x_array_list[3]])
-            # loss = self.weight_cl_fc * loss_cl_fc + self.weight_cl_fl * loss_cl_local_dti+self.weight_cl_fc * loss_cl_fc+self.weight_cl_fl * loss_cl_local_dti
-            loss_ce = self.criterion(x, x_res[1])
-            loss = (loss_ce )/ (loss_cl_fc + loss_cl_local_dti + loss_cl_t)
-            # loss = \self.weight_ce * loss_cefc + self.weight_cl_flself.weight_ce * loss_ce * loss_cl_local_dti
+            loss_cl_fsa = self.contrastive_loss(fea_arr_local_dti_fusion)
+            loss_cl_dsa = self.contrastive_loss([x_array_list[1], x_array_list[3]])
+            loss_ce = self.criterion(x, x_t_1)
+            loss = (loss_ce )/ (loss_cl_fc + loss_cl_local_dti)
             return loss, x
         else:
             loss = nn.CrossEntropyLoss(x, x_res[0])
