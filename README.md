@@ -9,7 +9,7 @@ torchcam == 0.3.2
 torchvision == 0.14.1  
 
 ## extract the imaging features
-To run the model, you need to extract the sfc, dfc, and alff by matlab. You can use the batch opearation of spm12 to finish this. Then, you need to use panda to gerenate FA. But you can also use FSL instead. In data file, we list some expample files. 
+To run the model, you need to extract the sfc, dfc, and alff by Matlab. You can use the batch operation of spm12 to finish this. Then, you need to use Panda to generate FA. But you can also use FSL instead. In the data file, we list some example files. Additionally, the input data shape might influence the kernel size of avgpooling, you need to change the kernel size, if has bugs.  
 
 ## run the model
 
