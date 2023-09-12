@@ -1,4 +1,4 @@
-# ddca-ha-mmscorecam-for-multi-modal-MRI
+# DDCA-HA-mmscorecam-for-multi-modal-MRI
 A framework of hierarchical alignments, dual-domain cross-attention,mmscorecam
 
 ## __Environment__  
