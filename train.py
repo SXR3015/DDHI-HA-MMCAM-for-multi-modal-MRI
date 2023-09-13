@@ -36,55 +36,13 @@ def train_epoch(epoch, fold_id, data_loader, model, criterion, optimizer,
         #inputs = Variable(inputs)
         inputs = list(inputs)
         labels = Variable(labels)
-        # outputs_add=torch.zeros(inputs[0].shape[0], 3, opt.n_classes).cuda()
-        # outputs_mutiply = torch.ones(inputs[0].shape[0], opt.n_classes).cuda()
-        # outputs_array = torch.zeros(opt.num_of_feature,inputs[0].shape[0], opt.n_classes)
-        # inputs_fmri=(,inputs[5])
-        # inputs_fc=(inputs[1],inputs[3])
-        # inputs_dti=(inputs[2],inputs[4])
-        # i=0
         features_dict = ['ALFF','DFC', 'FA', 'FC']
         features_select = opt.features.split('_')
-    #    indexs = []
         indexs = (features_dict.index(feature) for feature in features_select)
         inputs_1 = (inputs[index] for index in indexs)
         #inputs_1=[inputs[0], inputs[2], inputs[3]]
-#        inputs_2 = [inputs[5], inputs[3], inputs[4]]
         inputs = [list(inputs_1), labels]
         loss, outputs = model(inputs)
-        # if len(outputs) == 1:
-        #     loss = criterion(outputs, labels)
-        # else:
-        #     loss_cl=criterion(outputs[0],outputs[1])
-        #     loss_ce=criterion(outputs[2],labels)
-        #     loss=loss_cl+loss_ce
-       # inputs=[inputs_1, inputs_2]
-       #  outputs = torch.zeros(opt.num_of_feature, 3).cuda()
-       #  for input in inputs:
-       #      output_tmp = outputs
-       #      outputs = outputs + output_tmp
-        # for input in inputs_fmri:
-        #     output_tmp=model(input)
-        #     outputs_add=outputs_add+output_tmp
-        #     outputs_mutiply=outputs_mutiply *output_tmp
-        #     outputs_array[i,:,:]=output_tmp
-        #     i=i+1
-        # for input in inputs_fc:
-        #         output_tmp = model(input)
-        #         outputs_add = outputs_add + output_tmp
-        #         outputs_mutiply = outputs_mutiply * output_tmp
-        #         outputs_array[i, :, :] = output_tmp
-        #         i = i + 1
-        # for input in inputs_dti:
-        #         output_tmp = model(input)
-        #         outputs_add = outputs_add + output_tmp
-        #         outputs_mutiply = outputs_mutiply * output_tmp
-        #         outputs_array[i, :, :] = output_tmp
-        #         i = i + 1
-
-            #outputs = model(inputs)
-#        outputs_list=torch.from_numpy(np.array(outputs_list)).cuda()
-        #loss = criterion(outputs,labels)
         acc = calculate_accuracy(outputs, labels)
 
         losses.update(loss.data,inputs[0][0].size(0))
