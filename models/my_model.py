@@ -373,16 +373,16 @@ class MTSA(nn.Module):
         x_1 = self.dfc_encoder(x)
         x_5 = self.dfc_encoder_5(x_5[:,:,:,:,1:])
         x_1_5 = self.DD2C([x_1, x_5])
-        x_1_5 = self.dfc_3d_downsample _1_5(x_1_5)
+        x_1_5 = self.dfc_3d_downsample_1_5(x_1_5)
         x_10 = self.dfc_encoder_10(x_10[:,:,:,:,1:])
         x_1_5_10 = self.DD2C([x_1_5, x_10])
-        x_1_5_10 = self.dfc_3d_downsample _1_5_10(x_1_5_10)
+        x_1_5_10 = self.dfc_3d_downsample_1_5_10(x_1_5_10)
         x_20 = self.dfc_encoder_20(x_20[:,:,:,:,1:])
         x_1_5_10_20 = self.DD2C([x_1_5_10, x_20])
-        x_1_5_10_20= self.dfc_3d_downsample _1_5_10_20(x_1_5_10_20)
+        x_1_5_10_20= self.dfc_3d_downsample_1_5_10_20(x_1_5_10_20)
         x_40 = self.dfc_encoder_40(x_40[:,:,:,:,1:])
         x_1_5_10_20_40 = self.DD2C([x_1_5_10_20, x_40])
-        x_1_5_10_20_40 = self.dfc_3d_downsample _1_5_10_20_40(x_1_5_10_20_40)
+        x_1_5_10_20_40 = self.dfc_3d_downsample_1_5_10_20_40(x_1_5_10_20_40)
         x_res = self.conv_last_res(x_1_5_10_20_40)
         x_res = self.bn_last_res(x_res)
         '''
@@ -491,7 +491,7 @@ class Attention(nn.Module):
         out_qv = torch.matmul(attn_qv, k)
         out_qk = torch.matmul(attn_qk, v)
         out_kv = torch.matmul(attn_kv, q)
-        out = out_qk + out_qv + out_kv
+        out = out_qk
         out = rearrange(out, 'b h n d -> b n (h d)')
         return self.to_out(out)#dim=512, inner_dim=dim_head *  heads
 
