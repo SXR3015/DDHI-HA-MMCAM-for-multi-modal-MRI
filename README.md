@@ -23,7 +23,8 @@ train.py
 test.py
 
 ## generate the avtivation map in multi-modal MRI  
-### replace the py files in initial torchcam with the files in method folder in this respority, including
+### replace the py files in initial torchcam package with the files in $\color[rgb]{1,0,1} method$ folder in this respority, including
+
 activation.py  
 core.py
 ### run test.py  
