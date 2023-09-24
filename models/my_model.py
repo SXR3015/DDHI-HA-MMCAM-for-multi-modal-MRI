@@ -502,7 +502,12 @@ class Transformer(nn.Module):
         self.dim = dim
         self.heads = heads
         self.ff = FeedForward(dim, mlp_dim)
-        self.att = Attention(dim, heads = heads, dim_head = dim_head),
+        self.att = Attention(dim, heads = heads, dim_head = dim_head)
+        for _ in range(depth):
+            self.layers.append(nn.ModuleList([
+                Attention(dim, heads = heads, dim_head = dim_head),
+                FeedForward(dim, mlp_dim)
+            ]))
    def exchange_info(self, x1=None, x2=None, x3=None, dim=512):
         if x3 == None:
             x_tmp_1 = x1[:,:,0:round(dim/3)]
