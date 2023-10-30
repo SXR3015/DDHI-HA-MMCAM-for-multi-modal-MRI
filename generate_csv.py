@@ -183,7 +183,7 @@ for i in range(1, n_fold+1):
         test_list = np.vstack((test_list_health, test_list_MCI))
     if len(data_health) > 0 and len(data_MCI) == 0 and len(data_SMC) > 0:
         names2['train_list_fold%s'%i] = np.vstack((names2.get('train_fold%s_health'%i), names2.get('train_fold%s_SMC'%i)))
-        names2['val_list_fold%s'%i] = np.vstack((names2.get('val_fold%s_health'%i), names2.get('train_fold%s_SMC'%i)))
+        names2['val_list_fold%s'%i] = np.vstack((names2.get('val_fold%s_health'%i), names2.get('val_fold%s_SMC'%i)))
         test_list = np.vstack((test_list_health, test_list_SMC))
     if len(data_health) == 0 and len(data_MCI) > 0 and len(data_SMC) > 0:
         names2['train_list_fold%s'%i] = np.vstack((names2.get('train_fold%s_MCI'%i), names2.get('train_fold%s_SMC'%i)))
