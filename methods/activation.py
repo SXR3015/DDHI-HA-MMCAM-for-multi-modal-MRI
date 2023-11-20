@@ -268,6 +268,7 @@ class ScoreCAM(_CAM):
         # Normalize the activation
         # (N, C, H', W')
         upsampled_a_list = list()
+        activation_list = list()
         shape_ =list()
         shape_list = [[4,3,2],[3,3,1],[11,6,1],[6,3,1]]
         shape_list_single = [[4,3,2],[11,6,4],[11,6,1],[6,3,1]]
@@ -282,8 +283,8 @@ class ScoreCAM(_CAM):
         for act in set(self.hook_a_list):
             if act.shape in shape_:
                 continue
-            upsampled_a = [self._normalize(act, act.ndim - 2)]
-            shape_tmp = upsampled_a[0][0,0,...].cpu().shape
+            activation_a = [self._normalize(act, act.ndim - 2)]
+            shape_tmp = activation_a[0][0,0,...].cpu().shape
             # index_ = shape_list.index([shape_tmp[0],shape_tmp[1],shape_tmp[2]])
             try :
                 index_ = shape_list.index([shape_tmp[0],shape_tmp[1],shape_tmp[2]])
@@ -301,8 +302,8 @@ class ScoreCAM(_CAM):
                     # if len(index_) > 0:
                     #     index_ = 1
                     multi_scale = True
-            upsampled_a_list.insert(index_, upsampled_a[0])
-            # upsampled_a_list.append(upsampled_a)
+            activation_list.insert(index_, activation_a[0])
+            # upsampled_a_list.append(activation_a)
             shape_.append(act.shape)
         # exchange activation map
         # upsampled_a_tmp = upsampled_a_list[3]
@@ -311,7 +312,7 @@ class ScoreCAM(_CAM):
         # upsampled_a_tmp = upsampled_a_list[3]
         # upsampled_a_list[3] = upsampled_a_list[2]
         # upsampled_a_list[3] = upsampled_a_tmp
-        activations = upsampled_a_list.copy()
+        activations = activation_list.copy()
         # upsampled_a = [self._normalize(act, act.ndim - 2) for act in self.hook_a]
         # upsampled_a = upsampled_a[0][0,:,:,:,:]
         # upsampled_a = torch.mean(upsampled_a[0], dim=1)
