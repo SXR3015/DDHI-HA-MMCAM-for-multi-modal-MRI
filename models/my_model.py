@@ -476,12 +476,19 @@ class Attention(nn.Module):
         self.attend = nn.Softmax(dim = -1)
 
         self.to_qkv = nn.Linear(dim, inner_dim * 3, bias = False)
+        self.to_q = nn.Linear(dim, inner_dim, bias = False)
+        self.to_k = nn.Linear(dim, inner_dim, bias = False)
+        self.to_v = nn.Linear(dim, inner_dim, bias = False)
         self.to_out = nn.Linear(inner_dim, dim, bias = False)
 
-    def forward(self, x):
+    def forward(self, x, cross=False):
         x = self.norm(x)
         qkv = self.to_qkv(x).chunk(3, dim = -1)
         q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = self.heads), qkv)
+        if cross == True:
+            q = self.to_q(x[0])
+            k = self.to_k(x[1])
+            v = self.to_k(x[2])
         dots_qk = torch.matmul(q, k.transpose(-1, -2)) * self.scale
         dots_qv = torch.matmul(q, v.transpose(-1, -2)) * self.scale
         dots_kv = torch.matmul(k, v.transpose(-1, -2)) * self.scale
@@ -547,9 +554,8 @@ class Transformer(nn.Module):
             x_fa_alff = x_fa_alff + x_fa_alff_att
             x_fa_alff_ff = ff(x_fa_alff) + x_fa_alff
             x_fa_alff = x_fa_alff + x_fa_alff_ff
-            x_dfc_sfc, x_fa_alff = self.exchange_info(x_dfc_alff, x_fa_alff, None, dim=self.dim)
-            x_dfc_sfc = attn(x_dfc_sfc) + x_dfc_sfc
-            x_fa_alff = attn(x_fa_alff) + x_fa_alff
+            x_dfc_sfc = attn([x_dfc_sfc,x_fa_alff_ff], cross =True) + x_dfc_sfc
+            x_fa_alff = attn([x_fa_alff,x_dfc_sfc], cross =True) + x_fa_alff
             x_multi = x_fa_alff + x_dfc_sfc
             x_multi= attn(x_multi) + x_multi
             x_multi = ff(x_multi) + x_multi
@@ -686,7 +692,7 @@ class my_model_name(nn.Module):
             loss_cl_fsa = self.contrastive_loss(fea_arr_local_dti_fusion)
             loss_cl_dsa = self.contrastive_loss([x_array_list[1], x_array_list[3]])
             loss_ce = self.criterion(x, x_t_1)
-            loss = (loss_ce )/ (loss_cl_fc + loss_cl_local_dti)
+            loss = loss_ce + loss_cl_fc + loss_cl_local_dti
             return loss, x
         else:
             loss = nn.CrossEntropyLoss(x, x_res[0])
