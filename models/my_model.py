@@ -488,7 +488,7 @@ class Attention(nn.Module):
         if cross == True:
             q = self.to_q(x[0])
             k = self.to_k(x[1])
-            v = self.to_k(x[2])
+            v = self.to_k(x[1])
         dots_qk = torch.matmul(q, k.transpose(-1, -2)) * self.scale
         dots_qv = torch.matmul(q, v.transpose(-1, -2)) * self.scale
         dots_kv = torch.matmul(k, v.transpose(-1, -2)) * self.scale
